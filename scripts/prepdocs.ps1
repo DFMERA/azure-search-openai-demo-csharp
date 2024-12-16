@@ -1,3 +1,11 @@
+./scripts/load_azd_env.ps1
+
+# read the --remove parameter
+$remove = $args -contains "--remove"
+
+# read the --removeall parameter
+$removeAll = $args -contains "--removeall"
+
 if (-not $script:azdCmd) {
     $script:azdCmd = Get-Command azd -ErrorAction SilentlyContinue
 }
@@ -74,6 +82,16 @@ if ([string]::IsNullOrEmpty($env:AZD_PREPDOCS_RAN) -or $env:AZD_PREPDOCS_RAN -eq
     else{
         Write-Host "Using OpenAI"
         $dotnetArguments += " --embeddingmodel $($env:OPENAI_EMBEDDING_DEPLOYMENT) "
+    }
+
+    if ($remove) {
+        Write-Host "Remove existing documents"
+        $dotnetArguments += " --remove"
+    }
+
+    if ($removeAll) {
+        Write-Host "Remove all existing documents"
+        $dotnetArguments += " --removeall"
     }
     
     Write-Host "dotnet $dotnetArguments"
