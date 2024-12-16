@@ -160,61 +160,9 @@ static async ValueTask UploadBlobsAndCreateIndexAsync(
 {
     var container = await GetBlobContainerClientAsync(options);
 
-    // If it's a PDF, split it into single pages.
-    if (Path.GetExtension(fileName).Equals(".pdf", StringComparison.OrdinalIgnoreCase))
-    {
-        using var documents = PdfReader.Open(fileName, PdfDocumentOpenMode.Import);
-        for (int i = 0; i < documents.PageCount; i++)
-        {
-            var documentName = BlobNameFromFilePage(fileName, i);
-            var blobClient = container.GetBlobClient(documentName);
-            if (await blobClient.ExistsAsync())
-            {
-                continue;
-            }
-
-            var tempFileName = Path.GetTempFileName();
-
-            try
-            {
-                using var document = new PdfDocument();
-                document.AddPage(documents.Pages[i]);
-                document.Save(tempFileName);
-
-                await using var stream = File.OpenRead(tempFileName);
-                await blobClient.UploadAsync(stream, new BlobHttpHeaders
-                {
-                    ContentType = "application/pdf"
-                });
-
-                // revert stream position
-                stream.Position = 0;
-
-                await embeddingService.EmbedPDFBlobAsync(stream, documentName);
-            }
-            finally
-            {
-                File.Delete(tempFileName);
-            }
-        }
-    }
-    // if it's an img (end with .png/.jpg/.jpeg), upload it to blob storage and embed it.
-    else if (Path.GetExtension(fileName).Equals(".png", StringComparison.OrdinalIgnoreCase) ||
-        Path.GetExtension(fileName).Equals(".jpg", StringComparison.OrdinalIgnoreCase) ||
-        Path.GetExtension(fileName).Equals(".jpeg", StringComparison.OrdinalIgnoreCase))
-    {
-        using var stream = File.OpenRead(fileName);
-        var blobName = BlobNameFromFilePage(fileName);
-        var imageName = Path.GetFileNameWithoutExtension(blobName);
-        var url = await UploadBlobAsync(fileName, blobName, container);
-        await embeddingService.EmbedImageBlobAsync(stream, url, imageName);
-    }
-    else
-    {
-        var blobName = BlobNameFromFilePage(fileName);
-        await UploadBlobAsync(fileName, blobName, container);
-        await embeddingService.EmbedPDFBlobAsync(File.OpenRead(fileName), blobName);
-    }
+    var blobName = BlobNameFromFilePage(fileName);
+    await UploadBlobAsync(fileName, blobName, container);
+    await embeddingService.EmbedPDFBlobAsync(File.OpenRead(fileName), blobName);
 }
 
 static async Task<string> UploadBlobAsync(string fileName, string blobName, BlobContainerClient container)
