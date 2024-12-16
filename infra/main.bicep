@@ -137,7 +137,7 @@ param searchServiceResourceGroupName string = ''
 param searchServiceSemanticRankerLevel string // Set in main.parameters.json
 
 @description('SKU name for the Azure AI Search service. Default: standard')
-param searchServiceSkuName string = 'standard'
+param searchServiceSkuName string = 'basic'
 
 var actualSearchServiceSemanticRankerLevel = (searchServiceSkuName == 'free') ? 'disabled' : searchServiceSemanticRankerLevel
 

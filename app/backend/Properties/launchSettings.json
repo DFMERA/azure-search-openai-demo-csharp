@@ -4,7 +4,8 @@
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "AZURE_KEY_VAULT_ENDPOINT": "https://kv-vrfdb65ankz66.vault.azure.net/"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "http://localhost:5167"
@@ -13,7 +14,8 @@
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "AZURE_KEY_VAULT_ENDPOINT": "https://kv-vrfdb65ankz66.vault.azure.net/"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "https://localhost:7181"
