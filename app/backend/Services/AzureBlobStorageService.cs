@@ -37,37 +37,19 @@ internal sealed class AzureBlobStorageService(BlobContainerClient container)
                 }
                 else if (Path.GetExtension(fileName).ToLower() is ".pdf")
                 {
-                    using var documents = PdfReader.Open(stream, PdfDocumentOpenMode.Import);
-                    for (int i = 0; i < documents.PageCount; i++)
+                    var blobName = BlobNameFromFilePage(fileName);
+                    var blobClient = container.GetBlobClient(blobName);
+                    if (await blobClient.ExistsAsync(cancellationToken))
                     {
-                        var documentName = BlobNameFromFilePage(fileName, i);
-                        var blobClient = container.GetBlobClient(documentName);
-                        if (await blobClient.ExistsAsync(cancellationToken))
-                        {
-                            continue;
-                        }
-
-                        var tempFileName = Path.GetTempFileName();
-
-                        try
-                        {
-                            using var document = new PdfDocument();
-                            document.AddPage(documents.Pages[i]);
-                            document.Save(tempFileName);
-
-                            await using var tempStream = File.OpenRead(tempFileName);
-                            await blobClient.UploadAsync(tempStream, new BlobHttpHeaders
-                            {
-                                ContentType = "application/pdf"
-                            }, cancellationToken: cancellationToken);
-
-                            uploadedFiles.Add(documentName);
-                        }
-                        finally
-                        {
-                            File.Delete(tempFileName);
-                        }
+                        continue;
                     }
+
+                    await blobClient.UploadAsync(stream, new BlobHttpHeaders
+                    {
+                        ContentType = "application/pdf"
+                    }, cancellationToken: cancellationToken);
+
+                    uploadedFiles.Add(blobName);
                 }
             }
 

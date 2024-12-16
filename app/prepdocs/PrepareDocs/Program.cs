@@ -19,7 +19,7 @@ s_rootCommand.SetHandler(
 
             Matcher matcher = new();
             // From bash, the single quotes surrounding the path (to avoid expansion of the wildcard), are included in the argument value.
-            matcher.AddInclude(options.Files.Replace("'", string.Empty));
+            matcher.AddInclude(options.Files.replace("'", string.Empty));
 
             var results = matcher.Execute(
                 new DirectoryInfoWrapper(
@@ -160,43 +160,26 @@ static async ValueTask UploadBlobsAndCreateIndexAsync(
 {
     var container = await GetBlobContainerClientAsync(options);
 
-    // If it's a PDF, split it into single pages.
+    // If it's a PDF, upload the entire file.
     if (Path.GetExtension(fileName).Equals(".pdf", StringComparison.OrdinalIgnoreCase))
     {
-        using var documents = PdfReader.Open(fileName, PdfDocumentOpenMode.Import);
-        for (int i = 0; i < documents.PageCount; i++)
+        var documentName = BlobNameFromFilePage(fileName);
+        var blobClient = container.GetBlobClient(documentName);
+        if (await blobClient.ExistsAsync())
         {
-            var documentName = BlobNameFromFilePage(fileName, i);
-            var blobClient = container.GetBlobClient(documentName);
-            if (await blobClient.ExistsAsync())
-            {
-                continue;
-            }
-
-            var tempFileName = Path.GetTempFileName();
-
-            try
-            {
-                using var document = new PdfDocument();
-                document.AddPage(documents.Pages[i]);
-                document.Save(tempFileName);
-
-                await using var stream = File.OpenRead(tempFileName);
-                await blobClient.UploadAsync(stream, new BlobHttpHeaders
-                {
-                    ContentType = "application/pdf"
-                });
-
-                // revert stream position
-                stream.Position = 0;
-
-                await embeddingService.EmbedPDFBlobAsync(stream, documentName);
-            }
-            finally
-            {
-                File.Delete(tempFileName);
-            }
+            return;
         }
+
+        await using var stream = File.OpenRead(fileName);
+        await blobClient.UploadAsync(stream, new BlobHttpHeaders
+        {
+            ContentType = "application/pdf"
+        });
+
+        // revert stream position
+        stream.Position = 0;
+
+        await embeddingService.EmbedPDFBlobAsync(stream, documentName);
     }
     // if it's an img (end with .png/.jpg/.jpeg), upload it to blob storage and embed it.
     else if (Path.GetExtension(fileName).Equals(".png", StringComparison.OrdinalIgnoreCase) ||
